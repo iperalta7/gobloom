@@ -7,9 +7,10 @@ import (
 )
 
 type BloomFilter struct {
-	Bits                    []bool
+	bits                    []bool
+	bitSize                 int // m
 	ExpectedSize            int // n
-	HashCount               int // k
+	hashCount               int // k
 	DesiredFalseProbability float32
 }
 
@@ -19,8 +20,9 @@ func New(expectedSize int, desiredFalseProbability float32) (*BloomFilter, error
 		DesiredFalseProbability: desiredFalseProbability,
 	}
 
-	bf.initBitsArray(float64(expectedSize), float64(desiredFalseProbability))
-
+	bf.getBitsSize(float64(expectedSize), float64(desiredFalseProbability))
+	bf.initBitsArray()
+	bf.calculateNumOfHashes()
 	return bf, nil
 }
 
@@ -39,21 +41,23 @@ func (bf *BloomFilter) Insert(word string) {}
 func (bf *BloomFilter) Lookup(word string) {}
 
 // TODO: aka m
-func (bf *BloomFilter) getSize(n float64, p float64) int {
+func (bf *BloomFilter) getBitsSize(n float64, p float64) {
 	m := -(n * math.Log(p)) /
 		math.Pow(math.Log(2), 2)
-	return int(m)
+	bf.bitSize = int(m)
 }
 
 // TODO
-func (bf *BloomFilter) initBitsArray(n float64, p float64) {
-	m := bf.getSize(n, p)
-	array := make([]bool, m)
-	bf.Bits = array
+func (bf *BloomFilter) initBitsArray() {
+	array := make([]bool, bf.bitSize)
+	bf.bits = array
 }
 
 // TODO
-func (bf *BloomFilter) calculateNumOfHashes() {}
+func (bf *BloomFilter) calculateNumOfHashes() {
+	k := float64(bf.bitSize/bf.ExpectedSize) * math.Log(2)
+	bf.hashCount = int(k)
+}
 
 // TODO
 func (bf *BloomFilter) calculateFalseProbability() {}
