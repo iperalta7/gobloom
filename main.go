@@ -1,8 +1,9 @@
 package main
 
 import (
-	"encoding/json"
+	"errors"
 	"fmt"
+	"log"
 	"math"
 )
 
@@ -19,19 +20,20 @@ func New(expectedSize int, desiredFalseProbability float32) (*BloomFilter, error
 		ExpectedSize:            expectedSize,
 		DesiredFalseProbability: desiredFalseProbability,
 	}
-
+	logger := log.Default()
 	bf.getBitsSize(float64(expectedSize), float64(desiredFalseProbability))
+	logger.Printf("Initiated bit array size of %d", bf.bitSize)
 	bf.initBitsArray()
 	bf.calculateNumOfHashes()
+	logger.Printf("Calculated hash count for ops %d", bf.hashCount)
 	return bf, nil
 }
 
-func (bf *BloomFilter) String() {
-	jsonBF, err := json.Marshal(bf)
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Printf("%s", string(jsonBF))
+func (bf *BloomFilter) String() string {
+	return fmt.Sprintf(
+		"BloomFilter{bits: %v, bitSize: %d, ExpectedSize: %d, hashCount: %d, DesiredFalseProbability: %f}",
+		bf.bits, bf.bitSize, bf.ExpectedSize, bf.hashCount, bf.DesiredFalseProbability,
+	)
 }
 
 // TODO
@@ -59,13 +61,25 @@ func (bf *BloomFilter) calculateNumOfHashes() {
 	bf.hashCount = int(k)
 }
 
-// TODO
-func (bf *BloomFilter) calculateFalseProbability() {}
+func (bf *BloomFilter) CalculateAFProbability() (float64, error) {
+	if bf.bitSize <= 0 {
+		return 0.0, errors.New("size of bit array must be >= zero to get false positive probability")
+	}
+	actualFp := math.Pow(1-math.Pow(math.Abs(float64(1-(1/float64(bf.bitSize)))), float64(bf.hashCount)*float64(bf.ExpectedSize)),
+		float64(bf.hashCount))
+	return actualFp, nil
+}
 
 func main() {
 	bloomFilter, err := New(10, 0.05)
 	if err != nil {
 		return
 	}
-	bloomFilter.String()
+	//fmt.Println(bloomFilter.String())
+	fpProbability, err := bloomFilter.CalculateAFProbability()
+	if err != nil {
+		log.Printf("%v", err)
+		return
+	}
+	fmt.Printf("%f\n", fpProbability)
 }
