@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"math"
+)
 
 type BloomFilter struct {
 	bits                    []bool
@@ -10,10 +13,14 @@ type BloomFilter struct {
 }
 
 func New(expectedSize int, desiredFalseProbability float32) (*BloomFilter, error) {
-	return &BloomFilter{
+	bf := &BloomFilter{
 		expectedSize:            expectedSize,
 		desiredFalseProbability: desiredFalseProbability,
-	}, nil
+	}
+
+	bf.initBitsArray(float64(expectedSize), float64(desiredFalseProbability))
+
+	return bf, nil
 }
 
 func (bf *BloomFilter) String() string {
@@ -21,22 +28,30 @@ func (bf *BloomFilter) String() string {
 }
 
 // TODO
-func (*BloomFilter) Insert(word string) {}
+func (bf *BloomFilter) Insert(word string) {}
 
 // TODO
-func (*BloomFilter) Lookup(word string) {}
+func (bf *BloomFilter) Lookup(word string) {}
 
 // TODO: aka m
-func (*BloomFilter) GetSize() {}
+func (bf *BloomFilter) getSize(n float64, p float64) int {
+	m := -(n * math.Log(p)) /
+		math.Pow(math.Log(2), 2)
+	return int(m)
+}
 
 // TODO
-func (*BloomFilter) newBitsArray() []bool {}
+func (bf *BloomFilter) initBitsArray(n float64, p float64) {
+	m := bf.getSize(n, p)
+	array := make([]bool, m)
+	bf.bits = array
+}
 
 // TODO
-func (*BloomFilter) calculateNumOfHashes() {}
+func (bf *BloomFilter) calculateNumOfHashes() {}
 
 // TODO
-func (*BloomFilter) calculateFalseProbability() {}
+func (bf *BloomFilter) calculateFalseProbability() {}
 
 func main() {
 	bloomFilter, err := New(10, 0.05)
