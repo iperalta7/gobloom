@@ -3,6 +3,7 @@ package gobloom
 import (
 	"errors"
 	"fmt"
+	hash "iperalta7/gobloom/internal"
 	"log"
 	"math"
 )
@@ -20,12 +21,11 @@ func New(expectedSize int, desiredFalseProbability float32) (*BloomFilter, error
 		ExpectedSize:            expectedSize,
 		DesiredFalseProbability: desiredFalseProbability,
 	}
-	logger := log.Default()
 	bf.getBitsSize(float64(expectedSize), float64(desiredFalseProbability))
-	logger.Printf("Initiated bit array size of %d", bf.bitSize)
+	log.Printf("Initiated bit array size of %d", bf.bitSize)
 	bf.initBitsArray()
 	bf.calculateNumOfHashes()
-	logger.Printf("Calculated hash count for ops %d", bf.hashCount)
+	log.Printf("Calculated hash count for ops %d", bf.hashCount)
 	return bf, nil
 }
 
@@ -36,11 +36,28 @@ func (bf *BloomFilter) String() string {
 	)
 }
 
-// TODO
-func (bf *BloomFilter) Insert(word string) {}
+func (bf *BloomFilter) Insert(word string) {
+	for i := range bf.hashCount {
+		hash_int := hash.MurmurHash3(word, uint32(i)) // use i as seed
+		index := int(math.Mod(float64(hash_int), float64(bf.bitSize)))
+		bf.bits[index] = true
+	}
+	log.Println("inserted!")
+}
 
 // TODO
-func (bf *BloomFilter) Lookup(word string) {}
+func (bf *BloomFilter) Lookup(word string) bool {
+	for i := range bf.hashCount {
+		hash_int := hash.MurmurHash3(word, uint32(i)) // use i as seed
+		index := int(math.Mod(float64(hash_int), float64(bf.bitSize)))
+		if !(bf.bits[index]) {
+			return false
+		}
+
+	}
+	log.Println("Exists!")
+	return true
+}
 
 // Private
 func (bf *BloomFilter) CalculateAFProbability() (float64, error) {
